@@ -29,8 +29,8 @@ export default function RootLayout({ children }) {
         {/* Barra de navegación institucional (Verde) */}
         <Navbar />
         
-        {/* Contenedor central adaptable para las vistas diarias ({children}) */}
-        <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Contenedor central liberado para permitir fondos de pantalla completa */}
+        <main className="flex-grow w-full">
           {children}
         </main>
         
