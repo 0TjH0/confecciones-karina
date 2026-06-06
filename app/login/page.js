@@ -2,8 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase'; // Importamos Supabase
+import { useRouter } from 'next/navigation'; // Importamos el enrutador
 
 export default function Login() {
+  const router = useRouter(); // Inicializamos el enrutador
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -12,14 +15,23 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     
-    // Aquí irá la lógica de Supabase: await supabase.auth.signInWithPassword(...)
-    console.log("Iniciando sesión con:", email);
-    
-    // Simulamos un tiempo de carga
-    setTimeout(() => {
+    // 1. Iniciar sesión real con Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    // 2. Manejo de errores (contraseña incorrecta, usuario no existe, etc.)
+    if (error) {
+      alert("Error al iniciar sesión: " + error.message);
       setLoading(false);
-      alert("Simulación de Login exitoso. En el Día 11 conectaremos Supabase.");
-    }, 1500);
+      return;
+    }
+
+    // 3. Éxito y redirección
+    alert("¡Inicio de sesión exitoso!");
+    router.push('/perfil'); // Redirigimos al área privada
+    setLoading(false);
   };
 
   return (

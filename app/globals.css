@@ -2,18 +2,40 @@
 @import "tailwindcss";
 
 @theme {
-  /* Registramos tus colores corporativos directamente en el motor de Tailwind v4 */
-  --color-karina-verde: #1e4d2b;    /* Un verde oscuro corporativo sólido (Nota: #2b6cb0 era azul, este es verde) */
-  --color-karina-naranjo: #c05621;  /* Naranjo oscuro institucional */
-  --color-fondo: #f9fafb;           /* Fondo neutro claro */
+  /* Mantenemos el registro formal de la paleta clara institucional */
+  --color-karina-verde: #10b981;    /* Verde Esmeralda Claro y Vibrante */
+  --color-karina-naranjo: #f97316;  /* Naranja Energético para CTA */
+  --color-fondo: #f9fafb;           /* Fondo suave WCAG AA */
 }
 
-/* Configuramos el comportamiento del cuerpo de la web */
+/* Evitar el scroll horizontal no deseado en dispositivos móviles */
+html, body {
+  overflow-x: hidden;
+}
+
 body {
   background-color: var(--color-fondo);
-  color: #171717;
-  font-family: Arial, Helvetica, sans-serif;
+  color: #111827;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+}
+
+/* Capa de animaciones optimizadas para inyección en componentes v4 */
+@utility animate-fade-in-down {
+  animation: fadeInDown 0.3s ease-out forwards;
+}
+
+@utility animate-fade-in-up {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }

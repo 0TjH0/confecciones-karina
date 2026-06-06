@@ -2,8 +2,12 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { supabase } from '@/lib/supabase'; // Importación de Supabase
+import { useRouter } from 'next/navigation'; // Importación del enrutador
 
 export default function Registro() {
+  const router = useRouter(); // Inicializamos el enrutador
+
   const [formData, setFormData] = useState({
     nombre: '',
     rut: '',
@@ -37,13 +41,32 @@ export default function Registro() {
 
     setLoading(true);
     
-    // Aquí irá la lógica de Supabase: await supabase.auth.signUp(...)
-    console.log("Registrando usuario:", formData);
-    
-    setTimeout(() => {
+    // 1. Crear el usuario en Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+    });
+
+    if (error) {
+      alert("Error al registrar: " + error.message);
       setLoading(false);
-      alert("Simulación de Registro exitoso. ¡Bienvenido a Confecciones Karina!");
-    }, 1500);
+      return;
+    }
+
+    // 2. Guardar sus datos extra en nuestra tabla 'perfiles'
+    if (data.user) {
+      const { error: profileError } = await supabase
+        .from('perfiles')
+        .insert([
+          { id: data.user.id, rut: formData.rut, nombre_completo: formData.nombre }
+        ]);
+        
+      if(profileError) console.error("Error guardando perfil", profileError);
+    }
+
+    alert("¡Cuenta creada con éxito!");
+    router.push('/perfil'); // Redirección automática
+    setLoading(false);
   };
 
   return (
@@ -77,7 +100,7 @@ export default function Registro() {
               </div>
             </div>
 
-            {/* RUT Chileno */}
+            {/* RUT Chileno*/}
             <div>
               <label htmlFor="rut" className="block text-sm font-medium text-gray-700">RUT (Sin puntos, con guion)</label>
               <div className="mt-1">

@@ -1,40 +1,35 @@
 // app/layout.js
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
+import { Inter } from 'next/font/google';
+import './globals.css';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Carga optimizada sin penalización de renderizado
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: "Confecciones Karina - Sistema de Gestión Textil",
-  description: "Optimización y seguimiento automatizado de pedidos textiles y estampados",
+  title: 'Confecciones Karina | Servicios Textiles a Medida',
+  description: 'Servicios automatizados de confección industrial, estampado corporativo y reparación textil con cotización al instante. Calidad y transparencia.',
+  keywords: 'confección, estampado, reparación de ropa, modista santiago, uniformes corporativos, cotización textil automatizada',
+  openGraph: {
+    title: 'Confecciones Karina',
+    description: 'Cotiza y realiza el seguimiento de tus pedidos textiles de forma digital.',
+    url: 'https://confecciones-karina.cl', 
+    siteName: 'Confecciones Karina',
+    locale: 'es_CL',
+    type: 'website',
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="es"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-gray-50 text-gray-900 font-sans">
-        {/* Barra de navegación institucional (Verde) */}
+    <html lang="es" className="scroll-smooth" data-scroll-behavior="smooth">
+      <body className={inter.className}>
+        {/* Descomentamos e integramos las dependencias estructurales definitivas */}
         <Navbar />
-        
-        {/* Contenedor central liberado para permitir fondos de pantalla completa */}
         <main className="flex-grow w-full">
           {children}
         </main>
-        
-        {/* Pie de página (Gris oscuro con borde Naranjo) */}
         <Footer />
       </body>
     </html>
