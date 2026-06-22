@@ -3,17 +3,9 @@
 import { useState } from 'react';
 
 // ============================================================================
-// SIMULACIÓN DE BASE DE DATOS (Día 11 se conectará a Supabase)
+// Estados reales que usa la modista en su Panel Administrativo
 // ============================================================================
-const mockPedidos = [
-  { id: 'PED-101', cliente: 'María López', servicio: 'Confección', fecha: '06/06/2026', estado: 'Recibido' },
-  { id: 'PED-102', cliente: 'Carlos Ruiz', servicio: 'Estampado', fecha: '05/06/2026', estado: 'En producción' },
-  { id: 'PED-103', cliente: 'Ana Soto', servicio: 'Reparación', fecha: '04/06/2026', estado: 'En camino' },
-  { id: 'PED-104', cliente: 'Pedro Gomez', servicio: 'Confección', fecha: '02/06/2026', estado: 'Entregado' },
-];
-
-// Definición de la línea de tiempo estricta
-const PASOS_ESTADO = ['Recibido', 'En producción', 'En camino', 'Entregado'];
+const PASOS_ESTADO = ['Esperando Pago', 'En producción', 'Listo para retiro', 'Entregado'];
 
 export default function SeguimientoPedidos() {
   const [busqueda, setBusqueda] = useState('');
@@ -21,7 +13,7 @@ export default function SeguimientoPedidos() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const buscarPedido = (e) => {
+  const buscarPedido = async (e) => {
     e.preventDefault();
     if (!busqueda.trim()) return;
 
@@ -29,16 +21,21 @@ export default function SeguimientoPedidos() {
     setError('');
     setPedido(null);
 
-    // Simulamos latencia de red
-    setTimeout(() => {
-      const encontrado = mockPedidos.find(p => p.id.toUpperCase() === busqueda.toUpperCase().trim());
-      if (encontrado) {
-        setPedido(encontrado);
+    try {
+      // Llamamos a nuestra nueva API conectada a PostgreSQL
+      const res = await fetch(`/api/seguimiento?id=${busqueda.trim()}`);
+      
+      if (res.ok) {
+        const data = await res.json();
+        setPedido(data);
       } else {
         setError('No hemos encontrado un pedido con ese código. Por favor, verifica e intenta nuevamente.');
       }
+    } catch (err) {
+      setError('Hubo un problema de conexión con el servidor.');
+    } finally {
       setLoading(false);
-    }, 800);
+    }
   };
 
   // Función para calcular si un paso ya se completó o es el actual
@@ -53,8 +50,8 @@ export default function SeguimientoPedidos() {
 
   return (
     <div className="min-h-screen bg-[#f9fafb] py-12 px-6 md:px-12">
-      <div className="max-w-3xl mx-auto">
-        
+      <div className="max-w-4xl mx-auto">
+       
         {/* Encabezado */}
         <div className="text-center mb-10">
           <h1 className="text-3xl md:text-4xl font-extrabold text-gray-800 mb-4 tracking-tight">
@@ -69,16 +66,16 @@ export default function SeguimientoPedidos() {
         {/* Buscador */}
         <div className="bg-white p-6 md:p-8 rounded-2xl shadow-md border border-gray-100 mb-8">
           <form onSubmit={buscarPedido} className="flex flex-col md:flex-row gap-4">
-            <input 
-              type="text" 
-              placeholder="Ejemplo: PED-101" 
+            <input
+              type="text"
+              placeholder="Ejemplo: PED-1234"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
               className="flex-grow px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#2b6cb0] outline-none text-lg uppercase transition-all"
               required
             />
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="px-8 py-3 bg-[#2b6cb0] hover:bg-[#1a4977] text-white font-bold rounded-lg shadow-md transition-all disabled:opacity-70 transform hover:-translate-y-0.5"
             >
@@ -103,7 +100,9 @@ export default function SeguimientoPedidos() {
               </div>
               <div className="text-left md:text-right">
                 <p className="text-sm text-gray-500">Fecha de solicitud</p>
-                <p className="font-medium text-gray-800">{pedido.fecha}</p>
+                <p className="font-medium text-gray-800">
+                  {pedido.fecha ? new Date(pedido.fecha).toLocaleDateString('es-CL') : 'Reciente'}
+                </p>
               </div>
             </div>
 
@@ -114,12 +113,12 @@ export default function SeguimientoPedidos() {
                   const status = getStepStatus(pedido.estado, paso);
                   return (
                     <div key={paso} className="flex flex-row md:flex-col items-center flex-1 w-full relative">
-                      
-                      {/* Línea conectora (oculta en el último elemento y en móviles se maneja distinto) */}
+                     
+                      {/* Línea conectora (oculta en el último elemento) */}
                       {index !== PASOS_ESTADO.length - 1 && (
                         <div className={`hidden md:block absolute top-6 left-[50%] w-full h-1 ${status === 'completado' ? 'bg-green-500' : 'bg-gray-200'} -z-10 transition-colors duration-500`}></div>
                       )}
-                      
+                     
                       {/* Línea conectora vertical para móviles */}
                       {index !== PASOS_ESTADO.length - 1 && (
                         <div className={`block md:hidden absolute left-6 top-[3rem] w-1 h-full ${status === 'completado' ? 'bg-green-500' : 'bg-gray-200'} -z-10 transition-colors duration-500`}></div>
@@ -127,8 +126,8 @@ export default function SeguimientoPedidos() {
 
                       {/* Círculo del paso */}
                       <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg border-4 transition-all duration-500 bg-white z-10
-                        ${status === 'completado' ? 'border-green-500 text-green-500' : 
-                          status === 'actual' ? 'border-[#c05621] bg-[#c05621] text-white shadow-lg transform scale-110' : 
+                        ${status === 'completado' ? 'border-green-500 text-green-500' :
+                          status === 'actual' ? 'border-[#c05621] bg-[#c05621] text-white shadow-lg transform scale-110' :
                           'border-gray-200 text-gray-400'}`}
                       >
                         {status === 'completado' ? '✓' : index + 1}
@@ -141,9 +140,9 @@ export default function SeguimientoPedidos() {
                         </p>
                         {status === 'actual' && (
                           <p className="text-xs text-gray-500 mt-1 md:mx-auto max-w-[120px]">
-                            {paso === 'Recibido' && 'Revisando tu solicitud.'}
+                            {paso === 'Esperando Pago' && 'Revisando tu transferencia.'}
                             {paso === 'En producción' && 'Estamos trabajando en tu prenda.'}
-                            {paso === 'En camino' && 'Tu pedido está listo para ti.'}
+                            {paso === 'Listo para retiro' && 'Tu pedido está listo para ti.'}
                             {paso === 'Entregado' && '¡Pedido finalizado!'}
                           </p>
                         )}
@@ -153,13 +152,13 @@ export default function SeguimientoPedidos() {
                 })}
               </div>
             </div>
-            
+           
             {pedido.estado === 'Entregado' && (
               <div className="mt-8 bg-green-50 p-4 rounded-xl text-center border border-green-200 animate-fade-in">
                 <p className="text-green-800 font-medium">¡Gracias por confiar en Confecciones Karina! Esperamos verte pronto.</p>
               </div>
             )}
-            
+           
           </div>
         )}
       </div>

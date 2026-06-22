@@ -1,181 +1,139 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 export default function PerfilCliente() {
-  // Estado simulado del usuario (En el Día 11 esto vendrá de Supabase)
-  const [usuario, setUsuario] = useState({
-    nombre: 'Juan Pérez',
-    rut: '12345678-9',
-    email: 'juan.perez@correo.com',
-    telefono: '+56 9 1234 5678',
-    direccion: 'Av. Providencia 1234, Depto 502',
-    comuna: 'Providencia'
-  });
+  const router = useRouter();
+  const [usuario, setUsuario] = useState(null);
+  const [historialPedidos, setHistorialPedidos] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [editando, setEditando] = useState(false);
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    const cargarPerfil = async () => {
+      try {
+        const res = await fetch('/api/perfil');
+        
+        if (res.status === 401) {
+          // Si no ha iniciado sesión, lo expulsamos al login
+          router.push('/login');
+          return;
+        }
 
-  // Historial de pedidos simulado
-  const historialPedidos = [
-    { id: 'PED-001', fecha: '01/06/2026', servicio: 'Confección Uniformes', estado: 'Entregado', total: '$45.000' },
-    { id: 'PED-002', fecha: '05/06/2026', servicio: 'Estampado Poleras', estado: 'En producción', total: '$12.500' }
-  ];
+        if (res.ok) {
+          const data = await res.json();
+          setUsuario(data.usuario);
+          setHistorialPedidos(data.pedidos);
+        }
+      } catch (error) {
+        console.error("Error conectando con la base de datos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleGuardarCambios = (e) => {
-    e.preventDefault();
-    setLoading(true);
-    
-    // Simulación de guardado en base de datos
-    setTimeout(() => {
-      setLoading(false);
-      setEditando(false);
-      alert("Perfil actualizado correctamente.");
-    }, 1000);
-  };
+    cargarPerfil();
+  }, [router]);
+
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center font-bold text-gray-500">Cargando tu perfil privado...</div>;
+  }
+
+  if (!usuario) return null;
 
   return (
     <div className="min-h-screen bg-[#f9fafb] py-10 px-6 md:px-12">
-      <div className="max-w-5xl mx-auto space-y-8">
-        
+      <div className="max-w-5xl mx-auto space-y-8 animate-fade-in-up">
+       
         {/* Encabezado del Perfil */}
         <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-6">
-            <div className="w-20 h-20 bg-[#2b6cb0] rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-inner">
+            <div className="w-20 h-20 bg-[#2b6cb0] rounded-full flex items-center justify-center text-white text-3xl font-bold shadow-inner uppercase">
               {usuario.nombre.charAt(0)}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">¡Hola, {usuario.nombre}!</h1>
-              <p className="text-gray-500">Cliente desde Junio 2026</p>
+              <p className="text-gray-500">Miembro de Confecciones Karina</p>
             </div>
           </div>
-          <button 
-            onClick={() => setEditando(!editando)}
-            className="px-6 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors"
+          <Link
+            href="/cotizar"
+            className="px-6 py-2 bg-[#c05621] hover:bg-[#9c4221] text-white font-bold rounded-lg transition-colors shadow-md"
           >
-            {editando ? 'Cancelar Edición' : 'Editar Perfil'}
-          </button>
+            + Nuevo Pedido
+          </Link>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          
+         
           {/* Columna Izquierda: Datos del Usuario */}
-          <div className="md:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Tus Datos</h2>
-            
-            <form onSubmit={handleGuardarCambios} className="space-y-4">
+          <div className="md:col-span-1 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 h-fit">
+            <h2 className="text-xl font-bold text-gray-800 mb-6 border-b pb-2">Tus Datos Personales</h2>
+           
+            <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">Nombre</label>
-                <input 
-                  type="text" 
-                  value={usuario.nombre}
-                  disabled={!editando}
-                  onChange={(e) => setUsuario({...usuario, nombre: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-[#2b6cb0] focus:border-[#2b6cb0] disabled:opacity-70"
-                />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Nombre Registrado</label>
+                <p className="mt-1 font-medium text-gray-900">{usuario.nombre}</p>
               </div>
-              
+             
               <div>
-                <label className="block text-sm font-medium text-gray-700">RUT (Solo lectura)</label>
-                <input 
-                  type="text" 
-                  value={usuario.rut}
-                  disabled
-                  className="mt-1 block w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-500 cursor-not-allowed"
-                />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">RUT</label>
+                <p className="mt-1 font-medium text-gray-900">{usuario.rut}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700">Teléfono</label>
-                <input 
-                  type="text" 
-                  value={usuario.telefono}
-                  disabled={!editando}
-                  onChange={(e) => setUsuario({...usuario, telefono: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-[#2b6cb0] focus:border-[#2b6cb0] disabled:opacity-70"
-                />
+                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Correo Electrónico</label>
+                <p className="mt-1 font-medium text-gray-900">{usuario.email}</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Dirección</label>
-                <input 
-                  type="text" 
-                  value={usuario.direccion}
-                  disabled={!editando}
-                  onChange={(e) => setUsuario({...usuario, direccion: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-[#2b6cb0] focus:border-[#2b6cb0] disabled:opacity-70"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Comuna</label>
-                <select
-                  value={usuario.comuna}
-                  disabled={!editando}
-                  onChange={(e) => setUsuario({...usuario, comuna: e.target.value})}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-900 focus:ring-[#2b6cb0] focus:border-[#2b6cb0] disabled:opacity-70"
-                >
-                  <option value="Ñuñoa">Ñuñoa</option>
-                  <option value="Providencia">Providencia</option>
-                  <option value="Santiago">Santiago Centro</option>
-                  <option value="Macul">Macul</option>
-                  <option value="La Florida">La Florida</option>
-                </select>
-              </div>
-
-              {editando && (
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full mt-4 bg-[#2b6cb0] hover:bg-[#1a4977] text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-70"
-                >
-                  {loading ? 'Guardando...' : 'Guardar Cambios'}
-                </button>
-              )}
-            </form>
+            </div>
           </div>
 
           {/* Columna Derecha: Historial de Pedidos */}
           <div className="md:col-span-2 bg-white p-8 rounded-2xl shadow-sm border border-gray-100 flex flex-col">
             <div className="flex justify-between items-center mb-6 border-b pb-2">
               <h2 className="text-xl font-bold text-gray-800">Historial de Pedidos</h2>
-              <Link href="/pedidos" className="text-sm font-medium text-[#c05621] hover:underline">
-                Realizar nuevo pedido
-              </Link>
             </div>
 
             {historialPedidos.length === 0 ? (
-              <div className="flex-grow flex flex-col items-center justify-center text-gray-500">
-                <span className="text-4xl mb-4">📦</span>
-                <p>Aún no tienes pedidos registrados.</p>
+              <div className="flex-grow flex flex-col items-center justify-center text-gray-500 py-10">
+                <span className="text-5xl mb-4">📦</span>
+                <p className="font-medium">Aún no tienes pedidos registrados.</p>
+                <Link href="/cotizar" className="text-[#2b6cb0] font-bold mt-2 hover:underline">Ir al catálogo para empezar</Link>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead>
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Servicio</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Código</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Fecha</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Servicio</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Estado</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Total</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {historialPedidos.map((pedido) => (
                       <tr key={pedido.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pedido.id}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">{pedido.fecha}</td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">{pedido.servicio}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-[#2b6cb0]">
+                          <Link href={`/seguimiento?id=${pedido.id}`} className="hover:underline">{pedido.id}</Link>
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {pedido.fecha ? new Date(pedido.fecha).toLocaleDateString('es-CL') : 'Reciente'}
+                        </td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{pedido.servicio}</td>
                         <td className="px-4 py-4 whitespace-nowrap">
-                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            pedido.estado === 'Entregado' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                          }`}>
+                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full border
+                            ${pedido.estado === 'Entregado' ? 'bg-green-50 text-green-700 border-green-200' : 
+                              pedido.estado === 'Esperando Pago' ? 'bg-red-50 text-red-700 border-red-200' : 
+                              'bg-yellow-50 text-yellow-700 border-yellow-200'}`}>
                             {pedido.estado}
                           </span>
                         </td>
-                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-bold">{pedido.total}</td>
+                        <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 font-extrabold">
+                          ${Number(pedido.total).toLocaleString('es-CL')}
+                        </td>
                       </tr>
                     ))}
                   </tbody>

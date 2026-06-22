@@ -2,12 +2,10 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { supabase } from '@/lib/supabase'; // Importación de Supabase
-import { useRouter } from 'next/navigation'; // Importación del enrutador
+import { useRouter } from 'next/navigation';
 
 export default function Registro() {
-  const router = useRouter(); // Inicializamos el enrutador
-
+  const router = useRouter();
   const [formData, setFormData] = useState({
     nombre: '',
     rut: '',
@@ -15,9 +13,10 @@ export default function Registro() {
     password: ''
   });
   const [errorRUT, setErrorRUT] = useState('');
+  const [errorGeneral, setErrorGeneral] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Función para formatear y validar el RUT en tiempo real (sin puntos, solo guion)
+  // Validación estricta chilena (Sin puntos, con guion automático)
   const handleRutChange = (e) => {
     let valor = e.target.value.replace(/[^0-9kK]/g, '').toUpperCase();
     
@@ -27,7 +26,6 @@ export default function Registro() {
     
     setFormData({ ...formData, rut: valor });
     
-    // Validación básica de longitud
     if (valor.length > 0 && valor.length < 9) {
       setErrorRUT('El RUT ingresado parece muy corto.');
     } else {
@@ -40,53 +38,59 @@ export default function Registro() {
     if (errorRUT) return;
 
     setLoading(true);
+    setErrorGeneral('');
     
-    // 1. Crear el usuario en Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-    });
+    try {
+      // 🚀 CONEXIÓN DIRECTA CON NUESTRA API POSTGRESQL LOCAL
+      const respuesta = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData), // Pasamos los datos limpios
+      });
 
-    if (error) {
-      alert("Error al registrar: " + error.message);
+      const datos = await respuesta.json();
+
+      if (!respuesta.ok) {
+        throw new Error(datos.error || 'Ocurrió un problema durante el registro.');
+      }
+
+      // Mensaje amigable para el cliente final
+      alert("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
+      router.push('/login'); // Redirección real a la pantalla de Login
+
+    } catch (error) {
+      setErrorGeneral(error.message);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    // 2. Guardar sus datos extra en nuestra tabla 'perfiles'
-    if (data.user) {
-      const { error: profileError } = await supabase
-        .from('perfiles')
-        .insert([
-          { id: data.user.id, rut: formData.rut, nombre_completo: formData.nombre }
-        ]);
-        
-      if(profileError) console.error("Error guardando perfil", profileError);
-    }
-
-    alert("¡Cuenta creada con éxito!");
-    router.push('/perfil'); // Redirección automática
-    setLoading(false);
   };
 
   return (
     <div className="min-h-screen bg-[#f9fafb] flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Crea tu cuenta
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
+          Crea tu cuenta de cliente
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           ¿Ya tienes cuenta?{' '}
-          <Link href="/login" className="font-medium text-[#2b6cb0] hover:text-[#1a4977] transition-colors">
+          <Link href="/login" className="font-semibold text-[#c05621] hover:underline">
             Inicia sesión aquí
           </Link>
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-up">
         <div className="bg-white py-8 px-4 shadow-xl rounded-2xl sm:px-10 border border-gray-100">
           <form className="space-y-6" onSubmit={handleRegister}>
             
+            {errorGeneral && (
+              <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium">
+                ⚠️ {errorGeneral}
+              </div>
+            )}
+
             {/* Nombre Completo */}
             <div>
               <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">Nombre Completo</label>
@@ -95,12 +99,13 @@ export default function Registro() {
                   id="nombre" type="text" required
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-[#2b6cb0] focus:border-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
+                  placeholder="Ej: Juan Pérez"
                 />
               </div>
             </div>
 
-            {/* RUT Chileno*/}
+            {/* RUT */}
             <div>
               <label htmlFor="rut" className="block text-sm font-medium text-gray-700">RUT (Sin puntos, con guion)</label>
               <div className="mt-1">
@@ -108,11 +113,11 @@ export default function Registro() {
                   id="rut" type="text" required maxLength="10"
                   value={formData.rut}
                   onChange={handleRutChange}
-                  className={`appearance-none block w-full px-3 py-2 border ${errorRUT ? 'border-red-300' : 'border-gray-300'} rounded-lg shadow-sm focus:outline-none focus:ring-[#2b6cb0] focus:border-[#2b6cb0] sm:text-sm`}
+                  className={`appearance-none block w-full px-4 py-2.5 border ${errorRUT ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-[#2b6cb0]'} rounded-lg shadow-sm focus:outline-none focus:ring-2 sm:text-sm`}
                   placeholder="12345678-9"
                 />
               </div>
-              {errorRUT && <p className="mt-2 text-sm text-red-600">{errorRUT}</p>}
+              {errorRUT && <p className="mt-2 text-sm text-red-600 font-medium">{errorRUT}</p>}
             </div>
 
             {/* Email */}
@@ -123,7 +128,8 @@ export default function Registro() {
                   id="email" type="email" required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-[#2b6cb0] focus:border-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
+                  placeholder="correo@ejemplo.com"
                 />
               </div>
             </div>
@@ -136,7 +142,7 @@ export default function Registro() {
                   id="password" type="password" required minLength="6"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-[#2b6cb0] focus:border-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
@@ -146,9 +152,9 @@ export default function Registro() {
               <button
                 type="submit"
                 disabled={loading || errorRUT !== ''}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#2b6cb0] hover:bg-[#1a4977] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#2b6cb0] transition-colors disabled:opacity-70"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-[#2b6cb0] hover:bg-[#1a4977] transition-all disabled:opacity-50 transform hover:-translate-y-0.5"
               >
-                {loading ? 'Creando cuenta...' : 'Registrarse'}
+                {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
               </button>
             </div>
           </form>

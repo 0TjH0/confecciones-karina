@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 // ============================================================================
-// DICCIONARIOS DE DATOS (Simulación de la Base de Datos para Precios)
+// DICCIONARIOS DE DATOS BASE
 // ============================================================================
 const PRECIOS_BASE = {
   'Confección': 15000,
@@ -22,15 +22,17 @@ const TARIFAS_DESPACHO = {
 };
 
 export default function SolicitudPedido() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     servicio: '',
     cantidad: 1,
     especificaciones: '',
     pecho: '', cintura: '', largo: '',
-    comuna: '' // ¡Nuevo campo para el Día 7!
+    comuna: ''
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingEnvio, setLoadingEnvio] = useState(false);
   const [paso, setPaso] = useState(1);
   const [presupuesto, setPresupuesto] = useState({ subtotal: 0, despacho: 0, total: 0 });
 
@@ -39,37 +41,58 @@ export default function SolicitudPedido() {
     setFormData({ ...formData, [name]: value });
   };
 
-  // ============================================================================
-  // MOTOR DE COTIZACIÓN AUTOMÁTICA
-  // ============================================================================
   const calcularCotizacion = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // 1. Obtener precios desde los diccionarios
     const precioUnitario = PRECIOS_BASE[formData.servicio] || 0;
     const costoDespacho = TARIFAS_DESPACHO[formData.comuna] || 0;
 
-    // 2. Matemática del negocio
     const subtotal = precioUnitario * parseInt(formData.cantidad);
     const total = subtotal + costoDespacho;
 
-    // 3. Guardar estado y pasar al Paso 2 (Resumen)
     setTimeout(() => {
       setPresupuesto({ subtotal, despacho: costoDespacho, total });
       setLoading(false);
       setPaso(2);
-    }, 800); // Simulamos el tiempo de procesamiento
+    }, 800);
   };
 
-  const confirmarPedido = () => {
-    alert("¡Pedido confirmado con éxito! (En el Día 11, esto se guardará en Supabase).");
-    // Aquí redirigiríamos al usuario a su panel de "Mis Pedidos"
+  const confirmarPedido = async () => {
+    setLoadingEnvio(true);
+    try {
+      const res = await fetch('/api/pedidos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          servicio: formData.servicio,
+          total: presupuesto.total
+        })
+      });
+
+      if (res.status === 401) {
+        alert("🔒 Debes iniciar sesión o registrarte para confirmar tu pedido.");
+        router.push('/login');
+        return;
+      }
+
+      if (res.ok) {
+        alert("✅ ¡Pedido confirmado con éxito! Puedes revisarlo en tu perfil.");
+        // Redirección profesional: El cliente va a su perfil a ver la compra
+        router.push('/perfil'); 
+      } else {
+        alert("❌ Ocurrió un error al procesar tu compra. Intenta nuevamente.");
+      }
+    } catch (error) {
+      console.error("Error confirmando pedido:", error);
+    } finally {
+      setLoadingEnvio(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#b0cae4] py-12 px-6 md:px-12">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-[#f9fafb] py-12 px-6 md:px-12">
+      <div className="max-w-3xl mx-auto animate-fade-in-up">
         
         {/* Encabezado */}
         <div className="text-center mb-10">
@@ -77,15 +100,14 @@ export default function SolicitudPedido() {
             {paso === 1 ? 'Solicitud de Pedido' : 'Resumen de Cotización'}
           </h1>
           <p className="text-gray-600">
-            {paso === 1 
-              ? 'Completa los detalles para calcular tu presupuesto al instante.' 
+            {paso === 1
+              ? 'Completa los detalles para calcular tu presupuesto al instante.'
               : 'Revisa el detalle de tu presupuesto automatizado.'}
           </p>
-          <div className="w-24 h-1.5 bg-[#d1642d] mx-auto rounded-full mt-6"></div>
+          <div className="w-24 h-1.5 bg-[#c05621] mx-auto rounded-full mt-6"></div>
         </div>
 
         {paso === 1 ? (
-          /* ======================= PASO 1: FORMULARIO ======================= */
           <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100">
             <form onSubmit={calcularCotizacion} className="space-y-8">
               
@@ -142,7 +164,7 @@ export default function SolicitudPedido() {
               </div>
 
               <div className="pt-4 border-t border-gray-100">
-                <button type="submit" disabled={loading || !formData.servicio} className="w-full flex justify-center py-4 px-4 border border-transparent rounded-lg shadow-md text-lg font-bold text-white bg-[#d36127] hover:bg-[#9c4221] transition-all disabled:opacity-50">
+                <button type="submit" disabled={loading || !formData.servicio} className="w-full flex justify-center py-4 px-4 border border-transparent rounded-lg shadow-md text-lg font-bold text-white bg-[#c05621] hover:bg-[#9c4221] transition-all disabled:opacity-50">
                   {loading ? 'Calculando Presupuesto...' : 'Generar Cotización Automática →'}
                 </button>
               </div>
@@ -176,8 +198,8 @@ export default function SolicitudPedido() {
               <button onClick={() => setPaso(1)} className="flex-1 py-3 px-4 border-2 border-gray-300 rounded-lg font-bold text-gray-600 hover:bg-gray-50 transition-all">
                 ← Editar Datos
               </button>
-              <button onClick={confirmarPedido} className="flex-1 py-3 px-4 bg-[#2b6cb0] hover:bg-[#1a4977] text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5">
-                Confirmar Pedido
+              <button onClick={confirmarPedido} disabled={loadingEnvio} className="flex-1 py-3 px-4 bg-[#2b6cb0] hover:bg-[#1a4977] text-white rounded-lg font-bold shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-50">
+                {loadingEnvio ? 'Guardando en Base de Datos...' : 'Confirmar Pedido'}
               </button>
             </div>
           </div>

@@ -1,33 +1,46 @@
-"use client"; // Directiva obligatoria en Next.js para usar interactividad (useState)
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-
-// Base de datos temporal (Mock Data). En el futuro, esto vendrá de Supabase.
-const serviciosDb = [
-  { id: 1, nombre: "Confección de Uniformes", categoria: "Confección", precio: "Desde $15.000", desc: "Uniformes corporativos, delantales y ropa de trabajo a medida.", img: "uniforme" },
-  { id: 2, nombre: "Estampado de Poleras", categoria: "Estampado", precio: "Desde $4.500", desc: "Estampado en vinilo textil y serigrafía de alta durabilidad.", img: "polera" },
-  { id: 3, nombre: "Reparación de Bastas", categoria: "Reparación", precio: "Desde $2.500", desc: "Ajuste de largo perfecto para pantalones, faldas y vestidos.", img: "basta" },
-  { id: 4, nombre: "Cambio de Cierres", categoria: "Reparación", precio: "Desde $3.000", desc: "Reemplazo de cierres dañados en casacas, jeans y mochilas.", img: "cierre" },
-  { id: 5, nombre: "Ropa Deportiva", categoria: "Confección", precio: "Desde $12.000", desc: "Conjuntos deportivos y buzos en telas transpirables.", img: "deporte" },
-  { id: 6, nombre: "Bordado de Logos", categoria: "Estampado", precio: "Desde $3.500", desc: "Bordado computarizado de alta definición para tu marca.", img: "bordado" },
-];
 
 export default function CatalogoServicios() {
   const [filtroActivo, setFiltroActivo] = useState('Todos');
+  const [serviciosDb, setServiciosDb] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Lógica para filtrar los servicios según la categoría seleccionada
-  const serviciosFiltrados = filtroActivo === 'Todos' 
-    ? serviciosDb 
+  // 1. Conexión a la Base de Datos PostgreSQL
+  useEffect(() => {
+    const cargarCatalogo = async () => {
+      try {
+        const respuesta = await fetch('/api/servicios');
+        if (respuesta.ok) {
+          const datos = await respuesta.json();
+          setServiciosDb(datos);
+        }
+      } catch (error) {
+        console.error("Error conectando a pgAdmin:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    cargarCatalogo();
+  }, []);
+
+  // 2. Lógica para filtrar los servicios según la categoría
+  const serviciosFiltrados = filtroActivo === 'Todos'
+    ? serviciosDb
     : serviciosDb.filter(servicio => servicio.categoria === filtroActivo);
 
   const categorias = ['Todos', 'Confección', 'Estampado', 'Reparación'];
 
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-gray-500 font-bold">Cargando catálogo en tiempo real...</div>;
+  }
+
   return (
     <div className="min-h-screen bg-[#f9fafb] py-12 px-6 md:px-12">
       <div className="max-w-7xl mx-auto">
-        
+       
         {/* ENCABEZADO DEL CATÁLOGO */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-800 mb-4 tracking-tight">Catálogo de Servicios</h1>
@@ -55,37 +68,44 @@ export default function CatalogoServicios() {
           ))}
         </div>
 
-        {/* GRILLA DE SERVICIOS */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {serviciosFiltrados.map((servicio) => (
-            <div 
-              key={servicio.id} 
-              className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col"
-            >
-              {/* Espacio para la imagen */}
-              <div className="relative h-56 w-full bg-gray-200">
-                <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium">
-                  {/* Cuando tengas las imágenes, usarás <Image src={`/img/${servicio.img}.jpg`} fill alt={servicio.nombre} /> */}
-                  [Imagen de {servicio.nombre}]
+        {/* GRILLA DE SERVICIOS DINÁMICA */}
+        {serviciosFiltrados.length === 0 ? (
+           <div className="text-center text-gray-500 py-10 font-medium">No hay servicios registrados en esta categoría aún.</div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+            {serviciosFiltrados.map((servicio) => (
+              <div
+                key={servicio.id}
+                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col"
+              >
+                {/* Espacio para la imagen */}
+                <div className="relative h-56 w-full bg-gray-200">
+                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium">
+                    [Imagen de {servicio.nombre}]
+                  </div>
+                  {/* Etiqueta de categoría sobre la imagen */}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2b6cb0] shadow-sm">
+                    {servicio.categoria}
+                  </div>
                 </div>
-                {/* Etiqueta de categoría sobre la imagen */}
-                <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2b6cb0] shadow-sm">
-                  {servicio.categoria}
-                </div>
-              </div>
 
-              {/* Contenido de la tarjeta */}
-              <div className="p-6 flex flex-col flex-grow">
-                <h2 className="text-xl font-bold text-gray-800 mb-2">{servicio.nombre}</h2>
-                <p className="text-gray-600 text-sm mb-6 flex-grow">{servicio.desc}</p>
-                
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                  <span className="text-[#c05621] font-extrabold text-xl">{servicio.precio}</span>
+                {/* Contenido de la tarjeta */}
+                <div className="p-6 flex flex-col flex-grow">
+                  <h2 className="text-xl font-bold text-gray-800 mb-2">{servicio.nombre}</h2>
+                  {/* Nota: Usamos servicio.descripcion porque así se llama en pgAdmin */}
+                  <p className="text-gray-600 text-sm mb-6 flex-grow">{servicio.descripcion}</p>
+                 
+                  <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+                    {/* Nota: Formateamos el número para que se vea como moneda chilena */}
+                    <span className="text-[#c05621] font-extrabold text-xl">
+                      Desde ${Number(servicio.precio).toLocaleString('es-CL')}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* LLAMADO A LA ACCIÓN (CTA) */}
         <div className="bg-[#2b6cb0] rounded-2xl p-8 md:p-12 text-center text-white shadow-lg flex flex-col items-center">
@@ -93,8 +113,8 @@ export default function CatalogoServicios() {
           <p className="text-gray-100 mb-8 max-w-2xl">
             Nuestro sistema calculará tu cotización automáticamente, incluso para pedidos con especificaciones especiales.
           </p>
-          <Link 
-            href="/cotizar" 
+          <Link
+            href="/cotizar"
             className="bg-[#c05621] hover:bg-[#9c4221] text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
           >
             Ir al Cotizador Automático
