@@ -1,3 +1,4 @@
+// app/servicios/page.js
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ export default function CatalogoServicios() {
   const [serviciosDb, setServiciosDb] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Conexión a la Base de Datos PostgreSQL
+  // 1. Conexión a la Base de Datos PostgreSQL (Neon)
   useEffect(() => {
     const cargarCatalogo = async () => {
       try {
@@ -26,7 +27,14 @@ export default function CatalogoServicios() {
     cargarCatalogo();
   }, []);
 
-  // 2. Lógica para filtrar los servicios según la categoría
+  // Lógica para asignar dinámicamente las imágenes reales guardadas en /public
+  const obtenerImagenServicio = (categoria) => {
+    if (categoria === 'Confección') return '/telas.jpg';
+    if (categoria === 'Estampado') return '/totoro.png';
+    return '/reparacion.png'; // Por defecto para Reparación u otros
+  };
+
+  // 2. Lógica para filtrar los servicios según la categoría seleccionada
   const serviciosFiltrados = filtroActivo === 'Todos'
     ? serviciosDb
     : serviciosDb.filter(servicio => servicio.categoria === filtroActivo);
@@ -34,20 +42,24 @@ export default function CatalogoServicios() {
   const categorias = ['Todos', 'Confección', 'Estampado', 'Reparación'];
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500 font-bold">Cargando catálogo en tiempo real...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center text-gray-500 font-bold bg-[#f9fafb]">
+        Cargando catálogo textil en tiempo real...
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#f9fafb] py-12 px-6 md:px-12">
       <div className="max-w-7xl mx-auto">
        
-        {/* ENCABEZADO DEL CATÁLOGO */}
+        {/* ENCABEZADO DEL CATÁLOGO (Verde y Naranjo Corporativo) */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-gray-800 mb-4 tracking-tight">Catálogo de Servicios</h1>
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Explora nuestras soluciones textiles. Selecciona la categoría que necesitas y descubre nuestros precios base.
+            Explora nuestras soluciones textiles modulares. Selecciona la categoría que necesitas y descubre nuestros precios base.
           </p>
-          <div className="w-24 h-1.5 bg-[#c05621] mx-auto rounded-full mt-6"></div>
+          <div className="w-24 h-1.5 bg-[#f97316] mx-auto rounded-full mt-6"></div>
         </div>
 
         {/* FILTROS DE CATEGORÍA */}
@@ -56,9 +68,9 @@ export default function CatalogoServicios() {
             <button
               key={categoria}
               onClick={() => setFiltroActivo(categoria)}
-              className={`px-6 py-2.5 rounded-full font-medium transition-all duration-300 shadow-sm ${
+              className={`px-6 py-2.5 rounded-full font-bold transition-all duration-300 shadow-sm ${
                 filtroActivo === categoria
-                  ? 'bg-[#2b6cb0] text-white shadow-md transform scale-105'
+                  ? 'bg-[#10b981] text-white shadow-md transform scale-105'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'
               }`}
               aria-label={`Filtrar por ${categoria}`}
@@ -68,7 +80,7 @@ export default function CatalogoServicios() {
           ))}
         </div>
 
-        {/* GRILLA DE SERVICIOS DINÁMICA */}
+        {/* GRILLA DE SERVICIOS DINÁMICA CON IMÁGENES REALES */}
         {serviciosFiltrados.length === 0 ? (
            <div className="text-center text-gray-500 py-10 font-medium">No hay servicios registrados en esta categoría aún.</div>
         ) : (
@@ -76,15 +88,17 @@ export default function CatalogoServicios() {
             {serviciosFiltrados.map((servicio) => (
               <div
                 key={servicio.id}
-                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300 border border-gray-100 flex flex-col"
+                className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col transform hover:-translate-y-1"
               >
-                {/* Espacio para la imagen */}
-                <div className="relative h-56 w-full bg-gray-200">
-                  <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm font-medium">
-                    [Imagen de {servicio.nombre}]
-                  </div>
-                  {/* Etiqueta de categoría sobre la imagen */}
-                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#2b6cb0] shadow-sm">
+                {/* Renderizado dinámico de la imagen física de /public */}
+                <div className="relative h-56 w-full bg-gray-100 overflow-hidden">
+                  <img 
+                    src={obtenerImagenServicio(servicio.categoria)} 
+                    alt={servicio.nombre}
+                    className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                  />
+                  {/* Etiqueta de categoría corporativa */}
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#10b981] shadow-sm">
                     {servicio.categoria}
                   </div>
                 </div>
@@ -92,12 +106,10 @@ export default function CatalogoServicios() {
                 {/* Contenido de la tarjeta */}
                 <div className="p-6 flex flex-col flex-grow">
                   <h2 className="text-xl font-bold text-gray-800 mb-2">{servicio.nombre}</h2>
-                  {/* Nota: Usamos servicio.descripcion porque así se llama en pgAdmin */}
                   <p className="text-gray-600 text-sm mb-6 flex-grow">{servicio.descripcion}</p>
                  
                   <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
-                    {/* Nota: Formateamos el número para que se vea como moneda chilena */}
-                    <span className="text-[#c05621] font-extrabold text-xl">
+                    <span className="text-[#f97316] font-extrabold text-xl">
                       Desde ${Number(servicio.precio).toLocaleString('es-CL')}
                     </span>
                   </div>
@@ -107,15 +119,15 @@ export default function CatalogoServicios() {
           </div>
         )}
 
-        {/* LLAMADO A LA ACCIÓN (CTA) */}
-        <div className="bg-[#2b6cb0] rounded-2xl p-8 md:p-12 text-center text-white shadow-lg flex flex-col items-center">
-          <h3 className="text-2xl md:text-3xl font-bold mb-4">¿No encuentras lo que buscas o necesitas un pedido mayor?</h3>
-          <p className="text-gray-100 mb-8 max-w-2xl">
-            Nuestro sistema calculará tu cotización automáticamente, incluso para pedidos con especificaciones especiales.
+        {/* LLAMADO A LA ACCIÓN (CTA Corporativo Verde) */}
+        <div className="bg-[#10b981] rounded-2xl p-8 md:p-12 text-center text-white shadow-lg flex flex-col items-center">
+          <h3 className="text-2xl md:text-3xl font-bold mb-4">¿Necesitas un diseño a medida o un pedido por mayor?</h3>
+          <p className="text-emerald-50 mb-8 max-w-2xl font-light">
+            Nuestro sistema calculará tu cotización y los costos logísticos por comuna automáticamente de forma exacta.
           </p>
           <Link
             href="/cotizar"
-            className="bg-[#c05621] hover:bg-[#9c4221] text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+            className="bg-[#f97316] hover:bg-[#ea580c] text-white font-bold py-3 px-8 rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
           >
             Ir al Cotizador Automático
           </Link>

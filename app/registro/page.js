@@ -41,7 +41,7 @@ export default function Registro() {
     setErrorGeneral('');
     
     try {
-      // 🚀 CONEXIÓN DIRECTA CON NUESTRA API POSTGRESQL LOCAL
+      // 🚀 CONEXIÓN DIRECTA CON NUESTRA API POSTGRESQL EN LA NUBE (NEON)
       const respuesta = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -58,7 +58,7 @@ export default function Registro() {
 
       // Mensaje amigable para el cliente final
       alert("✅ ¡Cuenta creada con éxito! Ahora puedes iniciar sesión.");
-      router.push('/login'); // Redirección real a la pantalla de Login
+      router.push('/login'); // Redirección real a la pantalla de Login corporativo
 
     } catch (error) {
       setErrorGeneral(error.message);
@@ -73,9 +73,9 @@ export default function Registro() {
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 tracking-tight">
           Crea tu cuenta de cliente
         </h2>
-        <p className="mt-2 text-center text-sm text-gray-600">
+        <p className="mt-2 text-center text-sm text-gray-600 font-medium">
           ¿Ya tienes cuenta?{' '}
-          <Link href="/login" className="font-semibold text-[#c05621] hover:underline">
+          <Link href="/login" className="font-bold text-[#f97316] hover:text-[#ea580c] hover:underline">
             Inicia sesión aquí
           </Link>
         </p>
@@ -93,13 +93,13 @@ export default function Registro() {
 
             {/* Nombre Completo */}
             <div>
-              <label htmlFor="nombre" className="block text-sm font-medium text-gray-700">Nombre Completo</label>
+              <label htmlFor="nombre" className="block text-sm font-bold text-gray-700">Nombre Completo</label>
               <div className="mt-1">
                 <input
                   id="nombre" type="text" required
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] sm:text-sm font-medium"
                   placeholder="Ej: Juan Pérez"
                 />
               </div>
@@ -107,28 +107,28 @@ export default function Registro() {
 
             {/* RUT */}
             <div>
-              <label htmlFor="rut" className="block text-sm font-medium text-gray-700">RUT (Sin puntos, con guion)</label>
+              <label htmlFor="rut" className="block text-sm font-bold text-gray-700">RUT (Sin puntos, con guion)</label>
               <div className="mt-1">
                 <input
                   id="rut" type="text" required maxLength="10"
                   value={formData.rut}
                   onChange={handleRutChange}
-                  className={`appearance-none block w-full px-4 py-2.5 border ${errorRUT ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-[#2b6cb0]'} rounded-lg shadow-sm focus:outline-none focus:ring-2 sm:text-sm`}
+                  className={`appearance-none block w-full px-4 py-2.5 border ${errorRUT ? 'border-red-300 focus:ring-red-500' : 'border-gray-300 focus:ring-[#10b981] focus:border-[#10b981]'} rounded-lg shadow-sm focus:outline-none focus:ring-2 sm:text-sm font-medium`}
                   placeholder="12345678-9"
                 />
               </div>
-              {errorRUT && <p className="mt-2 text-sm text-red-600 font-medium">{errorRUT}</p>}
+              {errorRUT && <p className="mt-2 text-sm text-red-600 font-bold">{errorRUT}</p>}
             </div>
 
             {/* Email */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+              <label htmlFor="email" className="block text-sm font-bold text-gray-700">Correo electrónico</label>
               <div className="mt-1">
                 <input
                   id="email" type="email" required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] sm:text-sm font-medium"
                   placeholder="correo@ejemplo.com"
                 />
               </div>
@@ -136,13 +136,13 @@ export default function Registro() {
 
             {/* Contraseña */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">Contraseña</label>
+              <label htmlFor="password" className="block text-sm font-bold text-gray-700">Contraseña</label>
               <div className="mt-1">
                 <input
                   id="password" type="password" required minLength="6"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#2b6cb0] sm:text-sm"
+                  className="appearance-none block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-[#10b981] focus:border-[#10b981] sm:text-sm font-medium"
                   placeholder="Mínimo 6 caracteres"
                 />
               </div>
@@ -152,9 +152,9 @@ export default function Registro() {
               <button
                 type="submit"
                 disabled={loading || errorRUT !== ''}
-                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-[#2b6cb0] hover:bg-[#1a4977] transition-all disabled:opacity-50 transform hover:-translate-y-0.5"
+                className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-bold text-white bg-[#10b981] hover:bg-[#059669] transition-all disabled:opacity-50 transform hover:-translate-y-0.5"
               >
-                {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
+                {loading ? 'Creando cuenta en Neon...' : 'Crear Cuenta'}
               </button>
             </div>
           </form>
