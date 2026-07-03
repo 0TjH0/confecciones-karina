@@ -51,20 +51,25 @@ export async function PUT(req) {
   }
 }
 
-// 🌟 4. ELIMINAR SERVICIO (DELETE)
+// 🌟 4. ELIMINAR REGISTROS (DELETE)
 export async function DELETE(req) {
   try {
     const body = await req.json();
-    const { id } = body;
+    const { id, tipo } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "ID de servicio no proporcionado" }, { status: 400 });
+      return NextResponse.json({ error: "ID no proporcionado" }, { status: 400 });
     }
 
-    // Ejecuta la query física de eliminación directa
-    await pool.query('DELETE FROM servicios WHERE id = $1', [id]);
-    
-    return NextResponse.json({ success: true, message: "Servicio purgado exitosamente de Neon" }, { status: 200 });
+    // Polimorfismo: Verificamos qué tabla queremos afectar
+    if (tipo === 'pedido') {
+      await pool.query('DELETE FROM pedidos WHERE id = $1', [id]);
+      return NextResponse.json({ success: true, message: "Pedido purgado exitosamente de Neon" }, { status: 200 });
+    } else {
+      await pool.query('DELETE FROM servicios WHERE id = $1', [id]);
+      return NextResponse.json({ success: true, message: "Servicio purgado exitosamente de Neon" }, { status: 200 });
+    }
+
   } catch (error) {
     console.error("Error en DELETE /api/admin:", error);
     return NextResponse.json({ error: "Error interno al ejecutar la eliminación física" }, { status: 500 });

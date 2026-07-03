@@ -59,9 +59,33 @@ export default function PanelAdministrativo() {
     }
   };
 
-  // KPIs dinámicos
-  const totalIngresos = pedidos.filter(p => p.estado !== 'Esperando Pago').reduce((acc, ped) => acc + Number(ped.total), 0);
-  const pedidosPendientes = pedidos.filter(p => p.estado !== 'Entregado').length;
+  // NUEVA FUNCIÓN: Eliminar Pedido Físicamente
+  const eliminarPedido = async (id) => {
+    if (!window.confirm("¿Estás seguro de que deseas eliminar permanentemente este pedido? Esta acción no se puede deshacer.")) return;
+
+    try {
+      const res = await fetch('/api/admin', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, tipo: 'pedido' })
+      });
+
+      if (res.ok) {
+        setPedidos(pedidos.filter(p => p.id !== id));
+        alert("Pedido eliminado del sistema.");
+      }
+    } catch (error) {
+      console.error("Error eliminando pedido:", error);
+    }
+  };
+
+  // KPIs dinámicos (Excluyen los pedidos Cancelados)
+  const totalIngresos = pedidos
+    .filter(p => p.estado !== 'Esperando Pago' && p.estado !== 'Cancelado')
+    .reduce((acc, ped) => acc + Number(ped.total), 0);
+  
+  const pedidosPendientes = pedidos
+    .filter(p => p.estado !== 'Entregado' && p.estado !== 'Cancelado').length;
 
   // LÓGICA DE CATÁLOGO
   const agregarServicio = async (e) => {
@@ -80,21 +104,18 @@ export default function PanelAdministrativo() {
     }
   };
 
-  // NUEVA FUNCIÓN: Eliminar Servicio
+  // NUEVA FUNCIÓN: Eliminar Servicio (usando la misma ruta centralizada api/admin)
   const eliminarServicio = async (id) => {
-    // 1. Preguntamos por seguridad antes de borrar
     if (!window.confirm("¿Estás seguro de que deseas eliminar este servicio del catálogo?")) return;
 
     try {
-      // 2. Hacemos la petición DELETE a nuestra nueva ruta
-      const res = await fetch('/api/servicios', {
+      const res = await fetch('/api/admin', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }) // Enviamos el ID
+        body: JSON.stringify({ id, tipo: 'servicio' })
       });
 
       if (res.ok) {
-        // 3. Si Neon lo borró con éxito, actualizamos la tabla en pantalla instantáneamente
         setServicios(servicios.filter(srv => srv.id !== id));
         alert("Servicio eliminado exitosamente.");
       } else {
@@ -170,6 +191,7 @@ export default function PanelAdministrativo() {
                 <option value="En producción">🟡 En producción</option>
                 <option value="Listo para retiro">🔵 Listo para retiro</option>
                 <option value="Entregado">🟢 Entregado</option>
+                <option value="Cancelado">⚫ Cancelado</option>
               </select>
             </div>
 
@@ -181,7 +203,7 @@ export default function PanelAdministrativo() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">ID / RUT</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Cliente</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Servicio / Total</th>
-                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Estado</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Estado y Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -189,7 +211,7 @@ export default function PanelAdministrativo() {
                     <tr><td colSpan="4" className="text-center py-8 text-gray-500">No hay pedidos registrados.</td></tr>
                   ) : (
                     pedidosFiltrados.map((pedido) => (
-                      <tr key={pedido.id} className="hover:bg-gray-50">
+                      <tr key={pedido.id} className={`hover:bg-gray-50 ${pedido.estado === 'Cancelado' ? 'opacity-60' : ''}`}>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="font-bold text-gray-800">{pedido.id}</div>
                           <div className="text-xs text-gray-500">{pedido.rut_cliente}</div>
@@ -197,18 +219,38 @@ export default function PanelAdministrativo() {
                         <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{pedido.cliente_nombre}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-800">{pedido.servicio}</div>
-                          <div className="font-bold text-[#10b981]">${Number(pedido.total).toLocaleString('es-CL')}</div>
+                          <div className={`font-bold ${pedido.estado === 'Cancelado' ? 'text-gray-500 line-through' : 'text-[#10b981]'}`}>
+                            ${Number(pedido.total).toLocaleString('es-CL')}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-6 py-4 whitespace-nowrap flex items-center gap-2">
                           {pedido.estado === 'Esperando Pago' ? (
                             <button onClick={() => validarPago(pedido.id)} className="bg-red-100 text-red-700 font-bold py-1.5 px-4 rounded-lg text-sm border border-red-200">Validar Transferencia</button>
                           ) : (
-                            <select value={pedido.estado} onChange={(e) => cambiarEstado(pedido.id, e.target.value)} className="text-sm font-bold border rounded-lg px-3 py-1.5">
+                            <select 
+                              value={pedido.estado} 
+                              onChange={(e) => cambiarEstado(pedido.id, e.target.value)} 
+                              className={`text-sm font-bold border rounded-lg px-3 py-1.5 outline-none transition-colors ${pedido.estado === 'Cancelado' ? 'bg-gray-100 text-gray-500 border-gray-300' : 'bg-white'}`}
+                            >
                               <option value="En producción">En producción</option>
                               <option value="Listo para retiro">Listo para retiro</option>
                               <option value="Entregado">Entregado</option>
+                              <option value="Cancelado">Cancelado</option>
                             </select>
                           )}
+                          
+                          {/* Botón para Eliminar Físicamente */}
+                          <button 
+                            onClick={() => eliminarPedido(pedido.id)}
+                            className="text-red-400 hover:text-red-600 hover:bg-red-50 p-2 rounded-md transition-colors ml-2"
+                            title="Eliminar pedido permanentemente"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                          </button>
                         </td>
                       </tr>
                     ))
@@ -256,7 +298,6 @@ export default function PanelAdministrativo() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Servicio</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Categoría</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Precio Base</th>
-                    {/* NUEVA COLUMNA ACCIONES */}
                     <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Acciones</th>
                   </tr>
                 </thead>
@@ -271,7 +312,6 @@ export default function PanelAdministrativo() {
                       <td className="px-6 py-4 whitespace-nowrap font-bold text-[#10b981]">
                         ${Number(srv.precio).toLocaleString('es-CL')}
                       </td>
-                      {/* NUEVO BOTÓN DE ELIMINAR */}
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         <button 
                           onClick={() => eliminarServicio(srv.id)}
