@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation'; // Usamos useRouter en componentes de cliente
+import { useRouter } from 'next/navigation';
 
 export default function PanelAdministrativo() {
   const router = useRouter();
@@ -77,6 +77,31 @@ export default function PanelAdministrativo() {
       setServicios([...servicios, srvGuardado]); 
       setNuevoServicio({ nombre: '', categoria: 'Confección', precio: '', descripcion: '' });
       alert("Servicio agregado exitosamente a la base de datos.");
+    }
+  };
+
+  // NUEVA FUNCIÓN: Eliminar Servicio
+  const eliminarServicio = async (id) => {
+    // 1. Preguntamos por seguridad antes de borrar
+    if (!window.confirm("¿Estás seguro de que deseas eliminar este servicio del catálogo?")) return;
+
+    try {
+      // 2. Hacemos la petición DELETE a nuestra nueva ruta
+      const res = await fetch('/api/servicios', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }) // Enviamos el ID
+      });
+
+      if (res.ok) {
+        // 3. Si Neon lo borró con éxito, actualizamos la tabla en pantalla instantáneamente
+        setServicios(servicios.filter(srv => srv.id !== id));
+        alert("Servicio eliminado exitosamente.");
+      } else {
+        alert("Hubo un problema al intentar eliminar el servicio.");
+      }
+    } catch (error) {
+      console.error("Error eliminando servicio:", error);
     }
   };
 
@@ -231,6 +256,8 @@ export default function PanelAdministrativo() {
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Servicio</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Categoría</th>
                     <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Precio Base</th>
+                    {/* NUEVA COLUMNA ACCIONES */}
+                    <th className="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
@@ -243,6 +270,15 @@ export default function PanelAdministrativo() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{srv.categoria}</td>
                       <td className="px-6 py-4 whitespace-nowrap font-bold text-[#10b981]">
                         ${Number(srv.precio).toLocaleString('es-CL')}
+                      </td>
+                      {/* NUEVO BOTÓN DE ELIMINAR */}
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <button 
+                          onClick={() => eliminarServicio(srv.id)}
+                          className="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 font-bold py-1.5 px-3 rounded-lg text-xs transition-colors"
+                        >
+                          Eliminar
+                        </button>
                       </td>
                     </tr>
                   ))}
